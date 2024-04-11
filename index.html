@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Simple ASP Website</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src='//www.aa.com/jquery.js'></script>
+    
+    <script src="fuzzyset.js"></script>
+
+    <style>
+      #voice-input-btn {
+        background-color: #4CAF50;
+        border: none;
+        color: white;
+        padding: 20px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 20px;
+        margin: 4px 2px;
+        cursor: pointer;
+        border-radius: 50%;
+      }
+
+      #answer-box {
+        border: 1px solid black;
+        padding: 20px;
+        margin-top: 10px;
+        margin-left:60px;
+        height:50px;
+        width:1000px;
+      }
+    body {
+        background-image: url("https://worldinmaps.com/wp-content/uploads/2020/07/oceans-map-1.jpeg");
+
+        }
+
+      /* Increase the size of the text box */
+      #text-input {
+        width: 80%;
+        height: 75px;
+        font-size: 20px;
+        padding: 10px;
+        margin-top: 10px;
+      }
+          #submit-btn {
+        background-color: #4CAF50;
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        text-align: center;
+        text-decoration: none;
+        display: block;
+        cursor: pointer;
+        margin: 0 auto;
+        font-size: 16px;
+        margin-top: 10px;
+        border-radius: 50%;
+      }
+
+/* Center the submit button */
+      #submit-container {
+        text-align: center;
+      }
+  h1 {
+        background-color: #4CAF50;
+        text-align: center;
+      }   
+
+
+
+    </style>
+  </head>
+  <body>
+    <h1>Hey boss, Do you have any question on the oceans? just ask me below!</h1>
+    <div id="answer"></div>
+    <button id="voice-input-btn"><i class="fa fa-microphone"></i></button>
+    <!-- Updated text box here -->
+    <textarea id="text-input" placeholder="Waiting for the question...."></textarea>
+    <button id="submit-btn">Submit</button>
+    <div id="answer-box"></div>
+
+    <script>
+      
+      var isClose=true;
+        const stopwords = ["of", "the", "to", "a", "an", "any", "is", "can", "who", "what", "why", "whom"];
+        var editor = "sorts\n" +
+          
+
+" #oceans ={ pacific_ocean, atlantic_ocean,indian_ocean, southern_ocean,arctic_ocean}.\n" +
+" #number ={ seven,five}.\n" +
+
+" #continents =  {africa , europe , asia, australia,antarctica}.\n" +
+
+" predicates\n" +
+
+" ocean(#oceans).\n" +
+" continent(#continents).\n" +
+" largest_ocean(#oceans).\n" +
+" nearest_continent(#continents,#oceans).\n" +
+" deepest_ocean(#oceans).\n" +
+" number_of_continents(#number).\n" +
+" number_of_oceans(#number).\n" +
+" smallest_ocean(#oceans).\n" +
+
+
+" rules\n" + 
+
+" ocean(pacific_ocean).\n" +
+" ocean(atlantic_ocean).\n" +
+" ocean(indian_ocean).\n" +
+"ocean(southern_ocean).\n" +
+" ocean(arctic_ocean).\n" +
+"continent(antarctica).\n" +
+"continent(africa).\n" +
+"continent(europe).\n" +
+"continent(asia).\n" +
+"continent(australia).\n" +
+"largest_ocean(pacific_ocean).\n" +
+"nearest_continent(asia,pacific_ocean).\n" +
+"nearest_continent(africa,atlantic_ocean).\n" +
+"nearest_continent(asia,indian_ocean).\n" +
+"nearest_continent(antarctica,southern_ocean).\n" +
+"nearest_continent(europe,arctic_ocean).\n" +
+"smallest_ocean(arctic_ocean).\n" +
+" number_of_continents(seven).\n" +
+" number_of_oceans(five).\n" +           
+            
+"deepest_ocean(pacific_ocean).\n";
+        // sorts
+        var contstring = editor.split("sorts\n")[1].split("predicates\n");
+        var sortstring = contstring[0].split('.');
+        sortstring.splice(-1, 1);
+        var sorts = {};
+        sortstring = sortstring.map(d => d.replace(/\n/g, '').trim()).forEach(d => {
+            var par = d.split("=");
+            sorts[par[0].replace(/#/, '').trim()] = par[1].replace(/{|}/g, '').split(',').map(w => w.trim())
+        });
+        // predicates
+        var predicates = {};
+        contstring = contstring[1].split("rules\n");
+        sortstring = contstring[0].split('.');
+        sortstring.splice(-1, 1);
+        sortstring.forEach(d => {
+            var part = d.replace(/\n/g, '').trim().split('(');
+            var func = part[0];
+            predicates[func] = {};
+            var par = part[1].split(',').map(e => e.replace(/#|\)/g, '').trim());
+            var par1 = sorts[par[0]].slice();
+            par1.push("X");
+            par.splice(0, 1);
+            par1.forEach(e => {
+                var strinh = (e == 'X' ? '' : (e + ' ')) + func;
+                predicates[func][strinh] = func + "(" + e + ")";
+                par.forEach(par2 => {
+                    var temp = sorts[par2].slice();
+                    temp.push("X");
+                    temp.forEach(t => {
+                        var strinh = (e == 'X' ? '' : (e + ' ')) + func + (t == 'X' ? '' : (' ' + t));
+                        // if (strinh != fubnc)
+                        predicates[func][strinh] = func + "(" + e + "," + t + ")";
+                    })
+                });
+            });
+        });
+
+
+        var all_predicates = [];
+        for (var key1 in predicates) {
+            if (predicates.hasOwnProperty(key1)) {
+                for (var key2 in predicates[key1]) {
+                    if (predicates[key1].hasOwnProperty(key2))
+                        all_predicates.push(key2);
+                }
+            }
+
+        }
+        all_predicates.push('speak spanish'); // extra terms
+        a = FuzzySet(all_predicates);
+      
+      console.log(all_predicates)
+      
+      
+      // Speech recognition API
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+
+      // Get DOM elements
+      const answerDiv = document.querySelector('#answer');
+      const voiceBtn = document.getElementById('voice-input-btn');
+      const textInput = document.getElementById('text-input');
+      const submitBtn = document.getElementById('submit-btn');
+      const answerBox = document.getElementById('answer-box');
+
+      submitBtn.addEventListener('click', () => {
+        const question = textInput.value;
+        if (question.trim() === '') {
+          answerBox.innerHTML = 'Please ask a question.';
+          return;
+        }
+        var trim_script = question.split(" ");
+        trim_script = trim_script.filter(f => !stopwords.includes(f));
+        var queryQues = a.get(trim_script.join(" "), null, 0.5); 
+        getAnswer(queryQues);
+        
+      });
+
+      // Handle speech recognition
+      recognition.onresult = event => {
+        const resultIndex = event.resultIndex;
+        const transcript = event.results[resultIndex][0].transcript;
+        textInput.value = transcript;
+        
+        var trim_script = transcript.split(" ");
+        trim_script = trim_script.filter(f => !stopwords.includes(f));
+        var queryQues = a.get(trim_script.join(" "), null, 0.5);
+        console.log(queryQues);
+        getAnswer(queryQues);
+      };
+
+      // Handle click on voice input button     
+      function startSpeechRecognition() {
+        recognition.start();
+      }
+      voiceBtn.addEventListener('click', startSpeechRecognition);
+
+
+      function getAnswer(question) {
+        
+        if (question!=null) {
+                var mainkey = question[0][1].replace('speak ','');
+                var answerarr = mainkey.split(' ');
+                var key1 = '';
+                answerarr.forEach(d => {
+                    key1 = (predicates[d] != undefined) ? d : key1;
+                });
+                //var key1 = answerarr.length>2? answerarr[1]:answerarr[0];
+                var key2 = mainkey;
+                console.log(key1 +'-'+ key2);
+                console.log(predicates[key1][key2]);
+                
+                var data = {
+                    'action': "getQuery",
+                    'query': predicates[key1][key2],
+                    'editor': editor
+                };
+          
+          console.log(data)
+          
+          
+          
+          $.ajax({
+          url: "https://cors-anywhere.herokuapp.com/http://wave.ttu.edu/ajax.php",
+          type: "POST",
+          headers: {
+            "X-Requested-With": "XMLHttpRequest"
+          },
+          data: {
+            action: "getQuery",
+            query: predicates[key1][key2],
+            editor: editor
+          },
+          success: function(response) {
+            console.log(response);
+             const answer = response || 'Sorry, I could not find an answer.';
+             answerDiv.innerHTML = answer;
+             answerBox.innerHTML = answer;
+          },
+          error: function(xhr, status, error) {
+            console.log("error: " + error);
+          }
+        });
+
+
+// Questions :  
+// Number of  oceans are there on the earth?  ANS: FIVE
+// What is the largest ocean?  ANS : Pacific ocean
+// Number of continents are there on the earth?  ANS : SEVEN
+// Which continent is nearest to Atlantic ocean? ANS : Africa
+// Which continent is nearest to southern ocean?  ANS : Antartica
+// What is the deepest ocean present on the earth? ANS : Pacific ocean 
+// What is the smallest ocean ?  ANS: Arctic ocean
+// Which continent is nearest to pacific ocean? ANS : Asia
+// Which continent  is nearest to Indian ocean?  ANS : Asia
+// Which continent  is nearest to Arctic ocean?  ANS : Europe
+         
+            }
+        }
+        
+ 
+
+    </script>
+  </body>
+</html>
